@@ -9,8 +9,13 @@ CONFIG=$1
 CONFIG_DIR=${2:-/server}
 
 # Get subnet ip & mask
-SUBNET_IP=$(sed -nr 's/^server (.+?) (.+?)$/\1/p' ${CONFIG_DIR}/${CONFIG})
-SUBNET_MASK=$(sed -nr 's/^server (.+?) (.+?)$/\2/p' ${CONFIG_DIR}/${CONFIG})
+# Explanation: tac -> like "cat" but reversed, => sed => first line
+SUBNET_IP=$(tac ${CONFIG_DIR}/${CONFIG} | sed -nr 's/^ifconfig (.+?) (.+?)$/\1/p' | head -n 1)
+SUBNET_MASK=$(tac ${CONFIG_DIR}/${CONFIG} | sed -nr 's/^ifconfig (.+?) (.+?)$/\2/p' | head -n 1)
+if [ -z "$SUBNET_IP" ]; then
+    SUBNET_IP=$(tac ${CONFIG_DIR}/${CONFIG} | sed -nr 's/^server (.+?) (.+?)$/\1/p' | head -n 1)
+    SUBNET_MASK=$(tac ${CONFIG_DIR}/${CONFIG} | sed -nr 's/^server (.+?) (.+?)$/\2/p' | head -n 1)
+fi
 
 # Configure the  prohibited subnets if PROHIBITED_SUBNETS NOT NULL
 DEFAULT_PROHIBITED_SUBNETS='10.0.0.0/8;172.16.0.0/12;192.168.0.0/16'
